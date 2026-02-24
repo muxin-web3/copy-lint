@@ -2,11 +2,11 @@
 id: feature-chuang-jian-yi-4449
 title: 创建一个 Chinese copy formatting 的网站
 type: feature
-status: backlog
+status: review
 priority: high
 tags: []
 created_at: '2026-02-24T21:49:39.290Z'
-updated_at: '2026-02-24T22:00:30.933Z'
+updated_at: '2026-02-24T22:17:09.657Z'
 ---
 
 ## Goal
