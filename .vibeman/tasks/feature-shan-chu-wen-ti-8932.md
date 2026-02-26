@@ -2,11 +2,11 @@
 id: feature-shan-chu-wen-ti-8932
 title: 删除问题明细 section
 type: feature
-status: review
+status: done
 priority: medium
 tags: []
 created_at: '2026-02-26T22:12:25.024Z'
-updated_at: '2026-02-26T22:19:46.743Z'
+updated_at: '2026-02-26T22:37:14Z'
 ---
 
 ## Goal
