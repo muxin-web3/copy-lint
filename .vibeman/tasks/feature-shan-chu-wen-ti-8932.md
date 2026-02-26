@@ -1,12 +1,12 @@
 ---
 id: feature-shan-chu-wen-ti-8932
-title: 删除问题明细 section
+title: 删除问题明细 section 等
 type: feature
 status: done
 priority: medium
 tags: []
 created_at: '2026-02-26T22:12:25.024Z'
-updated_at: '2026-02-26T22:37:14Z'
+updated_at: '2026-02-26T22:38:29.454Z'
 ---
 
 ## Goal
@@ -15,10 +15,10 @@ updated_at: '2026-02-26T22:37:14Z'
 
 ## Context
 
-`src/App.tsx` 当前仍渲染独立的 `<section className="issues">`，标题为“问题明细”，包含问题列表、单条“点击修复”按钮与已定位说明文案。  
-`src/components/HighlightedOutput.tsx` 当前用 `<mark className="changed-fragment">` 渲染变更片段，并通过 `title` 展示 `ruleName + ruleDescription`，同时保留点击定位输入框行为。  
-“格式化输出”面板当前没有复制按钮。  
-`src/App.css` 里存在 `.issues`、`.issue-label`、`.selected-issue`、`.rule-detail` 等样式。  
+`src/App.tsx` 当前仍渲染独立的 `<section className="issues">`，标题为“问题明细”，包含问题列表、单条“点击修复”按钮与已定位说明文案。
+`src/components/HighlightedOutput.tsx` 当前用 `<mark className="changed-fragment">` 渲染变更片段，并通过 `title` 展示 `ruleName + ruleDescription`，同时保留点击定位输入框行为。
+“格式化输出”面板当前没有复制按钮。
+`src/App.css` 里存在 `.issues`、`.issue-label`、`.selected-issue`、`.rule-detail` 等样式。
 `tests/integration/app.test.tsx` 的“locates source position when clicking an issue”用例依赖“问题明细”标题与列表按钮查询。
 
 ## Requirements
