@@ -75,11 +75,17 @@ button:disabled {
   padding: 12px;
 }
 
-.panel h2,
-.issues h2 {
-  margin-top: 0;
-  margin-bottom: 10px;
+.panel h2 {
+  margin: 0;
   font-size: 1.05rem;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 textarea {
@@ -90,6 +96,11 @@ textarea {
   border: 1px solid #bdccde;
   padding: 12px;
   color: #15293d;
+}
+
+.output-wrapper {
+  display: grid;
+  gap: 8px;
 }
 
 .output-text {
@@ -114,6 +125,33 @@ textarea {
   outline: 2px solid #d88600;
 }
 
+.tooltip-detail,
+.tooltip-placeholder {
+  margin: 0;
+  min-height: 22px;
+  color: #43546a;
+  font-size: 0.92rem;
+}
+
+.tooltip-detail {
+  display: flex;
+  gap: 6px;
+}
+
+.copy-feedback {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+}
+
+.copy-feedback.success {
+  color: #1f7a1f;
+}
+
+.copy-feedback.error,
+.copy-feedback.unavailable {
+  color: #8f2f2f;
+}
+
 .ok-state {
   margin: 0 0 8px;
   color: #1f7a1f;
@@ -124,58 +162,8 @@ textarea {
   color: #6b7a8a;
 }
 
-.issues {
-  margin-top: 16px;
-  background: #fff;
-  border: 1px solid #d6dfeb;
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.issues ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.issues li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border: 1px solid #dce6f2;
-  border-radius: 8px;
-}
-
-.selected-issue {
-  border-color: #e6a427;
-  background: #fff8e6;
-}
-
-.issue-label {
-  border: none;
-  padding: 0;
-  background: transparent;
-  color: #142c46;
-  text-align: left;
-  flex: 1;
-}
-
-.rule-detail {
-  margin-bottom: 0;
-  color: #4e5d70;
-}
-
 @media (max-width: 900px) {
   .columns {
     grid-template-columns: 1fr;
-  }
-
-  .issues li {
-    flex-direction: column;
-    align-items: stretch;
   }
 }

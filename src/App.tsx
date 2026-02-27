@@ -6,15 +6,20 @@ import './App.css'
 
 const SAMPLE = `这是test文案,包含１２３数字和English标点!\n访问 https://example.com/test?x=1,y=2 或 mail me: user@example.com\n代码块:\n\`\`\`js\nconst x=1,y=2\n\`\`\``
 
-function applySingleFix(source: string, issue: Diagnostic): string {
-  return `${source.slice(0, issue.sourceStart)}${issue.replacement}${source.slice(issue.sourceEnd)}`
-}
+type CopyState =
+  | { kind: 'idle'; message: '' }
+  | { kind: 'success'; message: string }
+  | { kind: 'error'; message: string }
+  | { kind: 'unavailable'; message: string }
+
+const COPY_UNAVAILABLE_MESSAGE = '当前输出为空，暂无可复制内容'
 
 function App() {
   const [inputText, setInputText] = useState(SAMPLE)
   const [autoCheck, setAutoCheck] = useState(true)
   const [manualText, setManualText] = useState(SAMPLE)
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null)
+  const [copyState, setCopyState] = useState<CopyState>({ kind: 'idle', message: '' })
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const runText = autoCheck ? inputText : manualText
@@ -24,12 +29,9 @@ function App() {
     ? selectedIssueId
     : null
 
-  const selectedIssue = result.diagnostics.find(
-    (diagnostic) => diagnostic.id === activeIssueId,
-  )
-
   const isWhitespaceOnly = runText.trim().length === 0
   const noIssues = result.stats.totalIssues === 0 && !isWhitespaceOnly
+  const canCopyFormattedText = result.formattedText.length > 0
 
   function locateIssue(issue: Diagnostic) {
     setSelectedIssueId(issue.id)
@@ -43,6 +45,25 @@ function App() {
     input.focus()
     input.setSelectionRange(start, end)
     input.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+  }
+
+  async function handleCopyFormattedText() {
+    if (!canCopyFormattedText) {
+      setCopyState({ kind: 'unavailable', message: COPY_UNAVAILABLE_MESSAGE })
+      return
+    }
+
+    if (!navigator.clipboard?.writeText) {
+      setCopyState({ kind: 'error', message: '浏览器不支持复制，请手动复制输出内容' })
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(result.formattedText)
+      setCopyState({ kind: 'success', message: '已复制格式化输出' })
+    } catch {
+      setCopyState({ kind: 'error', message: '复制失败，请检查剪贴板权限后重试' })
+    }
   }
 
   return (
@@ -92,13 +113,26 @@ function App() {
             aria-label="input-text"
             ref={inputRef}
             value={inputText}
-            onChange={(event) => setInputText(event.target.value)}
+            onChange={(event) => {
+              setInputText(event.target.value)
+              setCopyState({ kind: 'idle', message: '' })
+            }}
             placeholder="请输入待检查的中文文案"
           />
         </article>
 
         <article className="panel">
-          <h2>格式化输出</h2>
+          <div className="panel-header">
+            <h2>格式化输出</h2>
+            <button type="button" onClick={handleCopyFormattedText} disabled={!canCopyFormattedText}>
+              一键复制
+            </button>
+          </div>
+          {copyState.message ? (
+            <p className={`copy-feedback ${copyState.kind}`} role="status" aria-live="polite">
+              {copyState.message}
+            </p>
+          ) : null}
           {isWhitespaceOnly ? (
             <p className="placeholder">输入为空或仅空白字符</p>
           ) : noIssues ? (
@@ -111,49 +145,6 @@ function App() {
             onSelectDiagnostic={locateIssue}
           />
         </article>
-      </section>
-
-      <section className="issues">
-        <h2>问题明细</h2>
-        {result.diagnostics.length === 0 ? (
-          <p className="placeholder">当前没有可修复的问题</p>
-        ) : (
-          <ul>
-            {result.diagnostics.map((diagnostic) => (
-              <li
-                key={diagnostic.id}
-                className={activeIssueId === diagnostic.id ? 'selected-issue' : ''}
-              >
-                <button
-                  type="button"
-                  className="issue-label"
-                  onClick={() => locateIssue(diagnostic)}
-                  title={diagnostic.ruleDescription}
-                >
-                  {diagnostic.ruleName}：
-                  <code>{diagnostic.original}</code> → <code>{diagnostic.replacement}</code>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextText = applySingleFix(runText, diagnostic)
-                    setInputText(nextText)
-                    setManualText(nextText)
-                    setSelectedIssueId(null)
-                  }}
-                >
-                  点击修复
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {selectedIssue ? (
-          <p className="rule-detail">
-            已定位：{selectedIssue.ruleName} - {selectedIssue.ruleDescription}
-          </p>
-        ) : null}
       </section>
     </main>
   )
