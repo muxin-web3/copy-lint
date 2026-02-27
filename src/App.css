@@ -272,6 +272,8 @@ textarea {
   border: 1px solid #e2e8f0;
   padding: 18px;
   color: #334155;
+  font-family: inherit;
+  font-size: 1rem;
   line-height: 1.8;
   background: #fff;
 }
@@ -298,7 +300,9 @@ textarea:focus {
   background: #fff;
   border: 1px solid #e2e8f0;
   word-break: break-word;
-  line-height: 1.85;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.8;
   color: #334155;
 }
 
