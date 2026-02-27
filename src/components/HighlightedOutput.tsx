@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Diagnostic, Segment } from '../engine/types'
 
 interface HighlightedOutputProps {
@@ -11,31 +11,60 @@ interface HighlightedOutputProps {
 const diagnosticMap = (diagnostics: Diagnostic[]) =>
   Object.fromEntries(diagnostics.map((item) => [item.id, item]))
 
+interface TooltipState {
+  left: number
+  top: number
+  ruleName: string
+  ruleDescription: string
+}
+
 export function HighlightedOutput({
   segments,
   diagnostics,
   selectedDiagnosticId,
   onSelectDiagnostic,
 }: HighlightedOutputProps) {
-  const [hoveredDiagnosticId, setHoveredDiagnosticId] = useState<string | null>(null)
   const map = diagnosticMap(diagnostics)
-  const hoveredDiagnostic = hoveredDiagnosticId ? map[hoveredDiagnosticId] : undefined
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+
+  function showTooltip(target: HTMLElement, diagnostic: Diagnostic) {
+    const wrapperRect = wrapperRef.current?.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    if (!wrapperRect) {
+      return
+    }
+
+    setTooltip({
+      left: targetRect.left - wrapperRect.left + targetRect.width / 2,
+      top: targetRect.top - wrapperRect.top - 8,
+      ruleName: diagnostic.ruleName,
+      ruleDescription: diagnostic.ruleDescription,
+    })
+  }
+
+  function hideTooltip() {
+    setTooltip(null)
+  }
 
   if (segments.length === 0) {
     return <p className="placeholder">输出为空</p>
   }
 
   return (
-    <div className="output-wrapper" onMouseLeave={() => setHoveredDiagnosticId(null)}>
-      {hoveredDiagnostic ? (
-        <p className="tooltip-detail" role="status" aria-live="polite">
-          <strong>{hoveredDiagnostic.ruleName}</strong>
-          <span>{hoveredDiagnostic.ruleDescription}</span>
+    <div className="output-wrapper" ref={wrapperRef}>
+      {tooltip ? (
+        <p
+          className="output-tooltip"
+          role="status"
+          aria-live="polite"
+          style={{ left: `${tooltip.left}px`, top: `${tooltip.top}px` }}
+        >
+          <strong>{tooltip.ruleName}</strong>
+          <span>{tooltip.ruleDescription}</span>
         </p>
-      ) : (
-        <p className="tooltip-placeholder">悬浮高亮片段可查看问题明细</p>
-      )}
-      <pre className="output-text" aria-label="formatted-output">
+      ) : null}
+      <pre className="output-text custom-scrollbar" aria-label="formatted-output">
         {segments.map((segment, index) => {
           if (!segment.changed || !segment.diagnosticId) {
             return <span key={`segment-${index}`}>{segment.text}</span>
@@ -47,12 +76,12 @@ export function HighlightedOutput({
           return (
             <mark
               key={`segment-${index}`}
-              className={`changed-fragment ${selected ? 'selected' : ''}`}
-              title={`${diagnostic.ruleName}: ${diagnostic.ruleDescription}`}
-              onMouseEnter={() => setHoveredDiagnosticId(segment.diagnosticId ?? null)}
-              onMouseLeave={() => setHoveredDiagnosticId(null)}
-              onFocus={() => setHoveredDiagnosticId(segment.diagnosticId ?? null)}
-              onBlur={() => setHoveredDiagnosticId(null)}
+              className={`highlight-mark changed-fragment ${selected ? 'selected' : ''}`}
+              aria-label={`${diagnostic.ruleName}: ${diagnostic.ruleDescription}`}
+              onMouseEnter={(event) => showTooltip(event.currentTarget, diagnostic)}
+              onMouseLeave={hideTooltip}
+              onFocus={(event) => showTooltip(event.currentTarget, diagnostic)}
+              onBlur={hideTooltip}
               onClick={() => onSelectDiagnostic(diagnostic)}
               role="button"
               tabIndex={0}

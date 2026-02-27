@@ -1,10 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { lintCopy } from './engine/lint'
 import type { Diagnostic } from './engine/types'
 import { HighlightedOutput } from './components/HighlightedOutput'
 import './App.css'
-
-const SAMPLE = `这是test文案,包含１２３数字和English标点!\n访问 https://example.com/test?x=1,y=2 或 mail me: user@example.com\n代码块:\n\`\`\`js\nconst x=1,y=2\n\`\`\``
 
 type CopyState =
   | { kind: 'idle'; message: '' }
@@ -15,9 +13,9 @@ type CopyState =
 const COPY_UNAVAILABLE_MESSAGE = '当前输出为空，暂无可复制内容'
 
 function App() {
-  const [inputText, setInputText] = useState(SAMPLE)
+  const [inputText, setInputText] = useState('')
   const [autoCheck, setAutoCheck] = useState(true)
-  const [manualText, setManualText] = useState(SAMPLE)
+  const [manualText, setManualText] = useState('')
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null)
   const [copyState, setCopyState] = useState<CopyState>({ kind: 'idle', message: '' })
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -32,6 +30,18 @@ function App() {
   const isWhitespaceOnly = runText.trim().length === 0
   const noIssues = result.stats.totalIssues === 0 && !isWhitespaceOnly
   const canCopyFormattedText = result.formattedText.length > 0
+
+  useEffect(() => {
+    if (copyState.kind !== 'success') {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setCopyState({ kind: 'idle', message: '' })
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [copyState.kind])
 
   function locateIssue(issue: Diagnostic) {
     setSelectedIssueId(issue.id)
@@ -60,7 +70,7 @@ function App() {
 
     try {
       await navigator.clipboard.writeText(result.formattedText)
-      setCopyState({ kind: 'success', message: '已复制格式化输出' })
+      setCopyState({ kind: 'success', message: '复制成功！' })
     } catch {
       setCopyState({ kind: 'error', message: '复制失败，请检查剪贴板权限后重试' })
     }
@@ -71,7 +81,15 @@ function App() {
       <header className="header">
         <h1>中文文案排版检查工具</h1>
         <p>
-          基于《中文文案排版指北》，支持实时检查、单条修复、全量修复和规则追溯。
+          基于
+          <a
+            href="https://github.com/sparanoid/chinese-copywriting-guidelines"
+            target="_blank"
+            rel="noreferrer"
+          >
+            《中文文案排版指北》
+          </a>
+          ，支持实时检查、单条修复、全量修复和规则追溯。
         </p>
       </header>
 
@@ -89,6 +107,7 @@ function App() {
         </button>
         <button
           type="button"
+          className="primary"
           onClick={() => {
             setInputText(result.formattedText)
             setManualText(result.formattedText)
@@ -100,16 +119,34 @@ function App() {
       </section>
 
       <section className="stats" aria-live="polite">
-        <strong>总问题数：{result.stats.totalIssues}</strong>
-        <span>空格规则：{result.stats.byRule['spacing-between-cjk-and-ascii']}</span>
-        <span>标点规则：{result.stats.byRule['chinese-punctuation']}</span>
-        <span>全/半角规则：{result.stats.byRule['fullwidth-to-halfwidth']}</span>
+        <div className="stat-item">
+          <span>总问题数：</span>
+          <strong>{result.stats.totalIssues}</strong>
+        </div>
+        <div className="stat-item">
+          <span>空格规则：</span>
+          <strong>{result.stats.byRule['spacing-between-cjk-and-ascii']}</strong>
+        </div>
+        <div className="stat-item">
+          <span>标点规则：</span>
+          <strong>{result.stats.byRule['chinese-punctuation']}</strong>
+        </div>
+        <div className="stat-item">
+          <span>全/半角规则：</span>
+          <strong>{result.stats.byRule['fullwidth-to-halfwidth']}</strong>
+        </div>
       </section>
 
       <section className="columns">
         <article className="panel">
-          <h2>输入文案</h2>
+          <h2>
+            <span className="panel-icon" aria-hidden="true">
+              ✎
+            </span>
+            输入文案
+          </h2>
           <textarea
+            className="custom-scrollbar"
             aria-label="input-text"
             ref={inputRef}
             value={inputText}
@@ -123,12 +160,28 @@ function App() {
 
         <article className="panel">
           <div className="panel-header">
-            <h2>格式化输出</h2>
-            <button type="button" onClick={handleCopyFormattedText} disabled={!canCopyFormattedText}>
-              一键复制
-            </button>
+            <h2>
+              <span className="panel-icon success" aria-hidden="true">
+                ✓
+              </span>
+              格式化输出
+            </h2>
+            <div className="copy-button-wrap">
+              <button
+                type="button"
+                onClick={handleCopyFormattedText}
+                disabled={!canCopyFormattedText}
+              >
+                一键复制
+              </button>
+              {copyState.kind === 'success' ? (
+                <span className="copy-success-tooltip" role="status" aria-live="polite">
+                  复制成功！
+                </span>
+              ) : null}
+            </div>
           </div>
-          {copyState.message ? (
+          {copyState.message && copyState.kind !== 'success' ? (
             <p className={`copy-feedback ${copyState.kind}`} role="status" aria-live="polite">
               {copyState.message}
             </p>
@@ -138,14 +191,25 @@ function App() {
           ) : noIssues ? (
             <p className="ok-state">无排版问题</p>
           ) : null}
-          <HighlightedOutput
-            segments={result.segments}
-            diagnostics={result.diagnostics}
-            selectedDiagnosticId={activeIssueId}
-            onSelectDiagnostic={locateIssue}
-          />
+          {!isWhitespaceOnly ? (
+            <HighlightedOutput
+              segments={result.segments}
+              diagnostics={result.diagnostics}
+              selectedDiagnosticId={activeIssueId}
+              onSelectDiagnostic={locateIssue}
+            />
+          ) : null}
         </article>
       </section>
+
+      <footer className="page-footer">
+        <div className="footer-links">
+          <a href="https://github.com/sparanoid/chinese-copywriting-guidelines" target="_blank" rel="noopener noreferrer">
+            中文文案排版指北文档
+          </a>
+        </div>
+        <span>© 2026 中文文案排版工具. 简约、精准、高效.</span>
+      </footer>
     </main>
   )
 }

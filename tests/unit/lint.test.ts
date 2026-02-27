@@ -42,4 +42,19 @@ describe('lintCopy', () => {
     const result = lintCopy('第一行test\n第二行,hello\n第三行１２３')
     expect(result.formattedText.split('\n')).toHaveLength(3)
   })
+
+  it('keeps ordered list markers as 1. 2. 3. in structured chinese copy', () => {
+    const result = lintCopy('请关注：\n1. 第一项\n2. 第二项\n3. 第三项')
+    expect(result.formattedText).toBe('请关注：\n1. 第一项\n2. 第二项\n3. 第三项')
+  })
+
+  it('keeps ordered list markers without a following space', () => {
+    const result = lintCopy('1.test\n2.测试\n3.done')
+    expect(result.formattedText).toBe('1.test\n2.测试\n3.done')
+  })
+
+  it('normalizes dot runs to chinese ellipsis', () => {
+    const result = lintCopy('我们正在学习以开放的心态去做梦......欢迎所有人共同创作。')
+    expect(result.formattedText).toBe('我们正在学习以开放的心态去做梦……欢迎所有人共同创作。')
+  })
 })

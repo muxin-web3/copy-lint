@@ -1,9 +1,10 @@
 :root {
-  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family:
+    Inter, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #1b2430;
-  background: #f3f7fb;
+  color: #1e293b;
+  background: #f8fafc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,10 +18,7 @@
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at 20% 10%, #e3f0ff 0, transparent 45%),
-    radial-gradient(circle at 80% 90%, #f5e7ff 0, transparent 40%),
-    #f3f7fb;
+  background: #f8fafc;
 }
 
 button,

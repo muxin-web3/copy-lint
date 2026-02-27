@@ -17,6 +17,7 @@ function mockClipboardWriteText(
 describe('App', () => {
   afterEach(() => {
     cleanup()
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -45,7 +46,7 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: '问题明细' })).not.toBeInTheDocument()
   })
 
-  it('shows matched tooltip detail and clears when moving to non-highlight text', async () => {
+  it('shows tooltip detail when hovering highlighted fragments', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -64,8 +65,7 @@ describe('App', () => {
     expect(screen.getByText('中英文标点规范')).toBeInTheDocument()
     expect(screen.getByText('中文语境建议使用中文全角标点。')).toBeInTheDocument()
 
-    await user.hover(within(output).getByText('world'))
-    expect(screen.getByText('悬浮高亮片段可查看问题明细')).toBeInTheDocument()
+    expect(screen.queryByText('悬浮高亮片段可查看问题明细')).not.toBeInTheDocument()
   })
 
   it('locates source position when clicking a highlighted fragment', async () => {
@@ -96,8 +96,25 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: '一键复制' }))
 
     expect(writeText).toHaveBeenCalledWith('你好 world，测试！')
-    expect(screen.getByText('已复制格式化输出')).toBeInTheDocument()
+    expect(screen.getByText('复制成功！')).toBeInTheDocument()
   })
+
+  it('hides copy success tooltip after three seconds', async () => {
+    const user = userEvent.setup()
+    const writeText = mockClipboardWriteText()
+    render(<App />)
+
+    const input = screen.getByLabelText('input-text')
+    await user.clear(input)
+    await user.type(input, '你好world,测试!')
+
+    await user.click(screen.getByRole('button', { name: '一键复制' }))
+    expect(writeText).toHaveBeenCalledWith('你好 world，测试！')
+    expect(screen.getByText('复制成功！')).toBeInTheDocument()
+
+    await new Promise((resolve) => setTimeout(resolve, 3100))
+    expect(screen.queryByText('复制成功！')).not.toBeInTheDocument()
+  }, 10000)
 
   it('shows copy failure feedback when clipboard write fails', async () => {
     const user = userEvent.setup()
@@ -131,6 +148,6 @@ describe('App', () => {
     expect(copyButton).toBeDisabled()
 
     await user.click(copyButton)
-    expect(screen.queryByText('已复制格式化输出')).not.toBeInTheDocument()
+    expect(screen.queryByText('复制成功！')).not.toBeInTheDocument()
   })
 })

@@ -15,6 +15,22 @@ const PUNCTUATION_MAP: Record<string, string> = {
 
 const CONTEXT_BREAK_RE = /[\n\r]/
 
+function isOrderedListMarkerDot(text: string, index: number): boolean {
+  const prev = text[index - 1] ?? ''
+  const next = text[index + 1] ?? ''
+  if (!/\d/.test(prev) || /\d/.test(next)) {
+    return false
+  }
+
+  let start = index - 1
+  while (start - 1 >= 0 && /\d/.test(text[start - 1])) {
+    start -= 1
+  }
+
+  const before = text[start - 1]
+  return before === undefined || /\s/.test(before)
+}
+
 function hasNearbyCjk(text: string, index: number): boolean {
   for (let i = index - 1; i >= 0; i -= 1) {
     const char = text[i]
@@ -41,6 +57,28 @@ function hasNearbyCjk(text: string, index: number): boolean {
 
 function findMatches(text: string, protectedRanges: TextRange[]): RuleMatch[] {
   const matches: RuleMatch[] = []
+  const ellipsisRe = /\.{3,}/g
+
+  for (const match of text.matchAll(ellipsisRe)) {
+    const start = match.index ?? -1
+    const value = match[0]
+    const end = start + value.length
+
+    if (start < 0 || overlapsProtectedRange(start, end, protectedRanges)) {
+      continue
+    }
+
+    if (!hasNearbyCjk(text, start)) {
+      continue
+    }
+
+    matches.push({
+      start,
+      end,
+      replacement: '……',
+      message: '中文语境建议使用省略号“……”。',
+    })
+  }
 
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i]
@@ -57,7 +95,15 @@ function findMatches(text: string, protectedRanges: TextRange[]): RuleMatch[] {
       continue
     }
 
+    if (char === '.' && (prev === '.' || next === '.')) {
+      continue
+    }
+
     if (char === '.' && /\d/.test(prev) && /\d/.test(next)) {
+      continue
+    }
+
+    if (char === '.' && isOrderedListMarkerDot(text, i)) {
       continue
     }
 
