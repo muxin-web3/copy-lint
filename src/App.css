@@ -224,6 +224,9 @@ button.primary:disabled:hover {
 
 .copy-button-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .copy-success-tooltip {

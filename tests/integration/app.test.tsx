@@ -99,6 +99,41 @@ describe('App', () => {
     expect(screen.getByText('复制成功！')).toBeInTheDocument()
   })
 
+  it('supports editing formatted output before copy', async () => {
+    const user = userEvent.setup()
+    const writeText = mockClipboardWriteText()
+    render(<App />)
+
+    const input = screen.getByLabelText('input-text')
+    await user.clear(input)
+    await user.type(input, '你好world,测试!')
+
+    await user.click(screen.getByRole('button', { name: '编辑输出' }))
+    const outputEditor = screen.getByLabelText('formatted-output')
+    await user.clear(outputEditor)
+    await user.type(outputEditor, '手动改写后的输出')
+
+    await user.click(screen.getByRole('button', { name: '一键复制' }))
+    expect(writeText).toHaveBeenCalledWith('手动改写后的输出')
+  })
+
+  it('keeps edited output when switching back to preview mode', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const input = screen.getByLabelText('input-text')
+    await user.clear(input)
+    await user.type(input, '你好world,测试!')
+
+    await user.click(screen.getByRole('button', { name: '编辑输出' }))
+    const outputEditor = screen.getByLabelText('formatted-output')
+    await user.clear(outputEditor)
+    await user.type(outputEditor, '这是我手动编辑后的内容')
+
+    await user.click(screen.getByRole('button', { name: '预览高亮' }))
+    expect(screen.getByLabelText('formatted-output')).toHaveTextContent('这是我手动编辑后的内容')
+  })
+
   it('hides copy success tooltip after three seconds', async () => {
     const user = userEvent.setup()
     const writeText = mockClipboardWriteText()

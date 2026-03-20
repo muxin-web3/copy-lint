@@ -16,20 +16,34 @@ function App() {
   const [inputText, setInputText] = useState('')
   const [autoCheck, setAutoCheck] = useState(true)
   const [manualText, setManualText] = useState('')
+  const [isOutputEditing, setIsOutputEditing] = useState(false)
+  const [outputDraft, setOutputDraft] = useState('')
+  const [isOutputDirty, setIsOutputDirty] = useState(false)
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null)
   const [copyState, setCopyState] = useState<CopyState>({ kind: 'idle', message: '' })
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const runText = autoCheck ? inputText : manualText
   const result = useMemo(() => lintCopy(runText), [runText])
+  const previewResult = useMemo(
+    () => (isOutputDirty ? lintCopy(outputDraft) : result),
+    [isOutputDirty, outputDraft, result],
+  )
 
-  const activeIssueId = result.diagnostics.some((item) => item.id === selectedIssueId)
+  const activeIssueId = previewResult.diagnostics.some((item) => item.id === selectedIssueId)
     ? selectedIssueId
     : null
 
-  const isWhitespaceOnly = runText.trim().length === 0
-  const noIssues = result.stats.totalIssues === 0 && !isWhitespaceOnly
-  const canCopyFormattedText = result.formattedText.length > 0
+  const displayOutputText = isOutputDirty ? outputDraft : result.formattedText
+  const isWhitespaceOnly = displayOutputText.trim().length === 0
+  const noIssues = previewResult.stats.totalIssues === 0 && !isWhitespaceOnly
+  const canCopyFormattedText = displayOutputText.length > 0
+
+  useEffect(() => {
+    if (!isOutputDirty) {
+      setOutputDraft(result.formattedText)
+    }
+  }, [isOutputDirty, result.formattedText])
 
   useEffect(() => {
     if (copyState.kind !== 'success') {
@@ -69,7 +83,7 @@ function App() {
     }
 
     try {
-      await navigator.clipboard.writeText(result.formattedText)
+      await navigator.clipboard.writeText(displayOutputText)
       setCopyState({ kind: 'success', message: '复制成功！' })
     } catch {
       setCopyState({ kind: 'error', message: '复制失败，请检查剪贴板权限后重试' })
@@ -111,6 +125,7 @@ function App() {
           onClick={() => {
             setInputText(result.formattedText)
             setManualText(result.formattedText)
+            setIsOutputDirty(false)
           }}
           disabled={result.diagnostics.length === 0}
         >
@@ -169,6 +184,15 @@ function App() {
             <div className="copy-button-wrap">
               <button
                 type="button"
+                onClick={() => {
+                  setIsOutputEditing((prev) => !prev)
+                  setCopyState({ kind: 'idle', message: '' })
+                }}
+              >
+                {isOutputEditing ? '预览高亮' : '编辑输出'}
+              </button>
+              <button
+                type="button"
                 onClick={handleCopyFormattedText}
                 disabled={!canCopyFormattedText}
               >
@@ -191,12 +215,28 @@ function App() {
           ) : noIssues ? (
             <p className="ok-state">无排版问题</p>
           ) : null}
-          {!isWhitespaceOnly ? (
+          {isOutputEditing ? (
+            <textarea
+              className="output-text output-edit-textarea custom-scrollbar"
+              aria-label="formatted-output"
+              value={outputDraft}
+              onChange={(event) => {
+                setOutputDraft(event.target.value)
+                setIsOutputDirty(true)
+                setCopyState({ kind: 'idle', message: '' })
+              }}
+              placeholder="可在此继续编辑格式化后的文案"
+            />
+          ) : !isWhitespaceOnly ? (
             <HighlightedOutput
-              segments={result.segments}
-              diagnostics={result.diagnostics}
+              segments={previewResult.segments}
+              diagnostics={previewResult.diagnostics}
               selectedDiagnosticId={activeIssueId}
-              onSelectDiagnostic={locateIssue}
+              onSelectDiagnostic={(diagnostic) => {
+                if (!isOutputDirty) {
+                  locateIssue(diagnostic)
+                }
+              }}
             />
           ) : null}
         </article>
